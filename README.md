@@ -9,7 +9,7 @@
 ## 必要な環境
 
 - [Node.js](https://nodejs.org/)（バージョン12以上）
-- TouchDesigner（`osc.toe`ファイルを使用）
+- TouchDesigner
 - npm（Node.jsに含まれています）
 
 ## 環境構築

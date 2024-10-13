@@ -1,5 +1,4 @@
 # OSC TouchDesigner システム
-
 このシステムは、ブラウザからTouchDesignerに対してOSC (Open Sound Control) を使用してデータを送信するシンプルな仕組みです。ボタンを押すたびに、押した回数がTouchDesignerに送信され、映像などの制御に使用できます。
 
 ## 機能
@@ -62,7 +61,7 @@ node server.js
 
 ### 5. ブラウザからデータを送信
 
-1. `index.html`ファイルをブラウザで開きます（直接ダブルクリックで開く形で問題ありません）。
+1. `index.html`ファイルをブラウザで開きます。
 2. ボタンを押すと、押した回数がサーバに送信され、さらにOSC経由でTouchDesignerに送信されます。
 
 ## TouchDesignerの設定

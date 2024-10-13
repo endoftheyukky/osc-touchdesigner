@@ -29,7 +29,7 @@ npm -v
 1. このリポジトリをクローンします：
 
    ```bash
-   git clone https://github.com/username/osc-touchdesigner.git
+   git clone https://github.com/endoftheyukky/osc-touchdesigner
    ```
 
 2. プロジェクトディレクトリに移動します：

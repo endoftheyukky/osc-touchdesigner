@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSC Button</title>
+    <script>
+        let count = 0; // ボタンを押した回数を保持する変数
+
+        function sendData() {
+            count++; // カウントを増加
+            console.log(`Sending count: ${count}`);
+
+            // Fetchを使ってデータをサーバに送信
+            fetch(`http://localhost:3000/send/${count}`)
+                .then(response => response.text())
+                .then(data => console.log(data))
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
+</head>
+<body>
+    <h1>OSC Button</h1>
+    <button onclick="sendData()">データを送信</button>
+</body>
+</html>

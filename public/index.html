@@ -12,7 +12,8 @@
             console.log(`Sending count: ${count}`);
 
             // Fetchを使ってデータをサーバに送信
-            fetch(`http://localhost:3000/send/${count}`)
+            // 必ず<YOUR_PC_IP_ADDRESS>を自分のPCのIPアドレスに置き換えること
+            fetch(`http://<YOUR_PC_IP_ADDRESS>:3000/send/${count}`)
                 .then(response => response.text())
                 .then(data => console.log(data))
                 .catch(error => console.error('Error:', error));

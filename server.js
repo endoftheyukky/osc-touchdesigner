@@ -1,8 +1,9 @@
+require('dotenv').config();
 const osc = require("osc");
 const express = require("express");
-const path = require("path"); // ファイルパスの操作に使用
+const path = require("path");
 const app = express();
-const port = 3000;
+const port = process.env.SERVER_PORT || 3000;
 
 // 静的ファイルの提供 (publicフォルダ内のファイルを提供)
 app.use(express.static(path.join(__dirname, 'public')));
@@ -37,8 +38,14 @@ app.get("/send/:value", (req, res) => {
     res.send(`Sent value: ${value}`);
 });
 
+app.get('/config', (req, res) => {
+    res.json({
+        serverIP: process.env.SERVER_IP,
+        serverPort: process.env.SERVER_PORT
+    });
+});
+
 // サーバの開始
 app.listen(port, "0.0.0.0", () => {
-    // サーバの起動確認。自分のPCのIPアドレスに変更することを想定
-    console.log(`Server is running at http://<YOUR_PC_IP_ADDRESS>:${port}`);
+    console.log(`Server is running at http://${process.env.SERVER_IP}:${port}`);
 });

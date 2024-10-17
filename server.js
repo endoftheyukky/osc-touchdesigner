@@ -40,5 +40,5 @@ app.get("/send/:value", (req, res) => {
 // サーバの開始
 app.listen(port, "0.0.0.0", () => {
     // サーバの起動確認。自分のPCのIPアドレスに変更することを想定
-    console.log(`Server is running at http://<YOUR_PC_IP_ADDRESS>:${port}`);
+    console.log(`Server is running at http://192.168.11.4:${port}`);
 });

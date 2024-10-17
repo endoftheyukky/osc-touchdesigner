@@ -3,25 +3,153 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OSC Button</title>
+    <title>OSC 時計 (右回りのみ)</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+        }
+        #clock-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+        }
+        #clock-image {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #hand {
+            width: 4px;
+            height: 120px;
+            background-color: #000;
+            position: absolute;
+            left: 148px;
+            bottom: 150px;
+            transform-origin: bottom center;
+            transition: transform 0.1s;
+            pointer-events: none;
+        }
+        #hand::after {
+            content: '';
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background-color: #000;
+            border-radius: 50%;
+            bottom: -6px;
+            left: -4px;
+        }
+        #rotationInfo {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
     <script>
-        let count = 0; // ボタンを押した回数を保持する変数
+        let rotations = 0;
+        let lastAngle = 0;
+        let totalRotation = 0;
+        let isDragging = false;
+        let startAngle = 0;
 
-        function sendData() {
-            count++; // カウントを増加
-            console.log(`Sending count: ${count}`);
+        function startDrag(e) {
+            isDragging = true;
+            e.preventDefault();
+            const {clientX, clientY} = (e.touches ? e.touches[0] : e);
+            startAngle = getAngle(clientX, clientY);
+            lastAngle = startAngle;
+        }
 
-            // Fetchを使ってデータをサーバに送信
-            // 必ず<YOUR_PC_IP_ADDRESS>を自分のPCのIPアドレスに置き換えること
-            fetch(`http://<YOUR_PC_IP_ADDRESS>:3000/send/${count}`)
+        function stopDrag() {
+            isDragging = false;
+        }
+
+        function getAngle(clientX, clientY) {
+            const clock = document.getElementById('clock-container');
+            const rect = clock.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
+        }
+
+        function rotateHand(e) {
+            if (!isDragging) return;
+
+            const {clientX, clientY} = (e.touches ? e.touches[0] : e);
+            let currentAngle = getAngle(clientX, clientY);
+
+            let angleDiff = currentAngle - lastAngle;
+
+            // 右回りの回転のみを許可
+            if (angleDiff < 0) {
+                angleDiff += 360;
+            }
+
+            if (angleDiff > 180) {
+                angleDiff -= 360;
+            }
+
+            // 左回りの動きを無視
+            if (angleDiff < 0) {
+                return;
+            }
+
+            totalRotation += angleDiff;
+            rotations = Math.floor(totalRotation / 360);
+
+            const hand = document.getElementById('hand');
+            hand.style.transform = `rotate(${totalRotation}deg)`;
+
+            updateRotationCount(rotations);
+            if (rotations % 1 === 0) {
+                sendData(rotations);
+            }
+
+            lastAngle = currentAngle;
+        }
+
+        function sendData(count) {
+            console.log(`回転数: ${count}`);
+
+            fetch(`http://192.168.11.4:3000/send/${count}`)
                 .then(response => response.text())
                 .then(data => console.log(data))
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('エラー:', error));
+        }
+
+        function updateRotationCount(count) {
+            document.getElementById('rotationCount').textContent = count;
+        }
+
+        window.onload = function() {
+            const clock = document.getElementById('clock-container');
+            // マウスイベント
+            clock.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', rotateHand);
+            document.addEventListener('mouseup', stopDrag);
+            // タッチイベント
+            clock.addEventListener('touchstart', startDrag);
+            document.addEventListener('touchmove', rotateHand);
+            document.addEventListener('touchend', stopDrag);
+            document.addEventListener('touchcancel', stopDrag);
         }
     </script>
 </head>
 <body>
-    <h1>OSC Button</h1>
-    <button onclick="sendData()">データを送信</button>
+    <div>
+        <div id="clock-container">
+            <img id="clock-image" src="image/clock.png" alt="Clock face">
+            <div id="hand"></div>
+        </div>
+        <div id="rotationInfo">
+            <p>回転数: <span id="rotationCount">0</span></p>
+        </div>
+    </div>
 </body>
 </html>

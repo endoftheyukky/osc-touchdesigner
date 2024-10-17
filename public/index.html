@@ -52,6 +52,8 @@
         }
     </style>
     <script>
+        let serverIP;
+        let serverPort;
         let rotations = 0;
         let lastAngle = 0;
         let totalRotation = 0;
@@ -117,7 +119,7 @@
         function sendData(count) {
             console.log(`回転数: ${count}`);
 
-            fetch(`http://192.168.11.4:3000/send/${count}`)
+            fetch(`http://${serverIP}:${serverPort}/send/${count}`)
                 .then(response => response.text())
                 .then(data => console.log(data))
                 .catch(error => console.error('エラー:', error));
@@ -138,7 +140,16 @@
             document.addEventListener('touchmove', rotateHand);
             document.addEventListener('touchend', stopDrag);
             document.addEventListener('touchcancel', stopDrag);
-        }
+
+            // サーバーから設定を取得
+            fetch('/config')
+                .then(response => response.json())
+                .then(config => {
+                    serverIP = config.serverIP;
+                    serverPort = config.serverPort;
+                })
+                .catch(error => console.error('設定の取得に失敗しました:', error));
+            }
     </script>
 </head>
 <body>

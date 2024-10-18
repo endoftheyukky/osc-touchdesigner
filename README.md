@@ -1,6 +1,6 @@
 # OSC TouchDesigner システム
 
-このシステムは、ブラウザ上で時計の針を回転させることで、角度に基づいた数値データをTouchDesignerにOSC (Open Sound Control) を使って送信するものです。
+このシステムは、ブラウザ上で時計の針を回転させることで、角度に基づいた数値データをTouchDesignerにOSC (Open Sound Control) を使って送信し、映像に変化を加えるインタラクティブシステムです。
 
 ## 機能
 - ブラウザに表示されたボタンを押すたびに、その回数がTouchDesignerに送信されます。

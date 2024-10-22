@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <title>OSC 時計 (右回りのみ)</title>
     <style>
         body {
@@ -59,8 +60,10 @@
         let totalRotation = 0;
         let isDragging = false;
         let startAngle = 0;
+        const MAX_ROTATIONS = 10; // 最大回転数
 
         function startDrag(e) {
+            if (rotations >= MAX_ROTATIONS) return; // 最大回転数に達した場合は操作を無効化
             isDragging = true;
             e.preventDefault();
             const {clientX, clientY} = (e.touches ? e.touches[0] : e);
@@ -80,8 +83,9 @@
             return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
         }
 
+
         function rotateHand(e) {
-            if (!isDragging) return;
+            if (!isDragging || rotations >= MAX_ROTATIONS) return; // 最大回転数に達した場合は操作を無効化
 
             const {clientX, clientY} = (e.touches ? e.touches[0] : e);
             let currentAngle = getAngle(clientX, clientY);
@@ -105,21 +109,24 @@
             totalRotation += angleDiff;
             rotations = Math.floor(totalRotation / 360);
 
+            if (rotations >= MAX_ROTATIONS) {
+                totalRotation = MAX_ROTATIONS * 360;
+                rotations = MAX_ROTATIONS;
+            }
+
             const hand = document.getElementById('hand');
             hand.style.transform = `rotate(${totalRotation}deg)`;
 
             updateRotationCount(rotations);
-            if (rotations % 1 === 0) {
-                sendData(rotations);
-            }
+            sendData(Math.round(totalRotation)); // 総回転角度を送信（小数点以下を四捨五入）
 
             lastAngle = currentAngle;
         }
 
-        function sendData(count) {
-            console.log(`回転数: ${count}`);
+        function sendData(totalAngle) {
+            console.log(`送信する値: ${totalAngle}`);
 
-            fetch(`http://${serverIP}:${serverPort}/send/${count}`)
+            fetch(`http://${serverIP}:${serverPort}/send/${totalAngle}`)
                 .then(response => response.text())
                 .then(data => console.log(data))
                 .catch(error => console.error('エラー:', error));
@@ -127,6 +134,9 @@
 
         function updateRotationCount(count) {
             document.getElementById('rotationCount').textContent = count;
+            if (count >= MAX_ROTATIONS) {
+                document.getElementById('maxRotationMessage').style.display = 'block';
+            }
         }
 
         window.onload = function() {
@@ -147,9 +157,11 @@
                 .then(config => {
                     serverIP = config.serverIP;
                     serverPort = config.serverPort;
+                    // 設定を取得した後、0を送信
+                    sendData(0);
                 })
                 .catch(error => console.error('設定の取得に失敗しました:', error));
-            }
+        }
     </script>
 </head>
 <body>

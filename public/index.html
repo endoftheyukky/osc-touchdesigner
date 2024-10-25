@@ -51,6 +51,12 @@
             margin-top: 20px;
             font-size: 18px;
         }
+        #message {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
     </style>
     <script>
         let serverIP;
@@ -61,14 +67,21 @@
         let isDragging = false;
         let startAngle = 0;
         const MAX_ROTATIONS = 10; // 最大回転数
+        let isClockLocked = false;
+        let isHalfClockLocked = false;
+        let hasStartedRotating = false;
 
         function startDrag(e) {
-            if (rotations >= MAX_ROTATIONS) return; // 最大回転数に達した場合は操作を無効化
+            if (isClockLocked || rotations >= MAX_ROTATIONS) return;
             isDragging = true;
             e.preventDefault();
             const {clientX, clientY} = (e.touches ? e.touches[0] : e);
             startAngle = getAngle(clientX, clientY);
             lastAngle = startAngle;
+            if (!hasStartedRotating) {
+                hasStartedRotating = true;
+                document.getElementById('message').style.display = 'none';
+            }
         }
 
         function stopDrag() {
@@ -83,49 +96,44 @@
             return Math.atan2(clientY - centerY, clientX - centerX) * 180 / Math.PI;
         }
 
-
         function rotateHand(e) {
-            if (!isDragging || rotations >= MAX_ROTATIONS) return; // 最大回転数に達した場合は操作を無効化
+            if (!isDragging || isClockLocked || rotations >= MAX_ROTATIONS) return;
 
             const {clientX, clientY} = (e.touches ? e.touches[0] : e);
             let currentAngle = getAngle(clientX, clientY);
 
             let angleDiff = currentAngle - lastAngle;
 
-            // 右回りの回転のみを許可
-            if (angleDiff < 0) {
-                angleDiff += 360;
-            }
-
-            if (angleDiff > 180) {
-                angleDiff -= 360;
-            }
-
-            // 左回りの動きを無視
-            if (angleDiff < 0) {
-                return;
-            }
+            if (angleDiff < 0) angleDiff += 360;
+            if (angleDiff > 180) angleDiff -= 360;
+            if (angleDiff < 0) return;
 
             totalRotation += angleDiff;
             rotations = Math.floor(totalRotation / 360);
 
+            console.log("Value:"+totalRotation)
+            console.log("isClockLocked:"+isClockLocked)
+
             if (rotations >= MAX_ROTATIONS) {
                 totalRotation = MAX_ROTATIONS * 360;
                 rotations = MAX_ROTATIONS;
+                lockClock();
+            } else if (totalRotation >= MAX_ROTATIONS * 360 / 2 && !isClockLocked && !isHalfClockLocked) {
+                isHalfClockLocked = true;
+                lockClockTemporarily();
             }
 
             const hand = document.getElementById('hand');
             hand.style.transform = `rotate(${totalRotation}deg)`;
 
             updateRotationCount(rotations);
-            sendData(Math.round(totalRotation)); // 総回転角度を送信（小数点以下を四捨五入）
+            sendData(Math.round(totalRotation));
 
             lastAngle = currentAngle;
         }
 
         function sendData(totalAngle) {
             console.log(`送信する値: ${totalAngle}`);
-
             fetch(`http://${serverIP}:${serverPort}/send/${totalAngle}`)
                 .then(response => response.text())
                 .then(data => console.log(data))
@@ -134,30 +142,39 @@
 
         function updateRotationCount(count) {
             document.getElementById('rotationCount').textContent = count;
-            if (count >= MAX_ROTATIONS) {
-                document.getElementById('maxRotationMessage').style.display = 'block';
-            }
+        }
+
+        function lockClock() {
+            isClockLocked = true;
+            document.getElementById('message').textContent = '最大回転数に達しました';
+            document.getElementById('message').style.display = 'block';
+        }
+
+        function lockClockTemporarily() {
+            isClockLocked = true;
+            document.getElementById('message').textContent = '少々お待ちください';
+            document.getElementById('message').style.display = 'block';
+            setTimeout(() => {
+                isClockLocked = false;
+                document.getElementById('message').style.display = 'none';
+            }, 10000);
         }
 
         window.onload = function() {
             const clock = document.getElementById('clock-container');
-            // マウスイベント
             clock.addEventListener('mousedown', startDrag);
             document.addEventListener('mousemove', rotateHand);
             document.addEventListener('mouseup', stopDrag);
-            // タッチイベント
             clock.addEventListener('touchstart', startDrag);
             document.addEventListener('touchmove', rotateHand);
             document.addEventListener('touchend', stopDrag);
             document.addEventListener('touchcancel', stopDrag);
 
-            // サーバーから設定を取得
             fetch('/config')
                 .then(response => response.json())
                 .then(config => {
                     serverIP = config.serverIP;
                     serverPort = config.serverPort;
-                    // 設定を取得した後、0を送信
                     sendData(0);
                 })
                 .catch(error => console.error('設定の取得に失敗しました:', error));
@@ -173,6 +190,7 @@
         <div id="rotationInfo">
             <p>回転数: <span id="rotationCount">0</span></p>
         </div>
+        <div id="message">時計を回してください</div>
     </div>
 </body>
 </html>

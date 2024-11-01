@@ -57,6 +57,22 @@
             font-size: 18px;
             font-weight: bold;
         }
+        #soundButton {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            z-index: 1000;
+            display: none;
+        }
+        #soundButton:hover {
+            background-color: #45a049;
+        }
     </style>
     <script>
         let serverIP;
@@ -70,11 +86,61 @@
         let isClockLocked = false;
         let isHalfClockLocked = false;
         let hasStartedRotating = false;
+        let lastPlayedAngle = 0; // 最後に音を鳴らした角度
+        let clockSound; // 時計の効果音
+        let isSoundInitialized = false;
+        let lastPlayTime = 0;
+
+        // 効果音の初期化
+        function initSound() {
+            clockSound = new Audio('clock.mp3');
+            bellSound = new Audio('bell.mp3');
+            clockSound.volume = 0.5;
+            bellSound.volume = 0.5;
+        }
+
+        function initAndEnableSound() {
+            if (!isSoundInitialized) {
+                initSound();
+                isSoundInitialized = true;
+                // ボタンを非表示にする
+                document.getElementById('soundButton').style.display = 'none';
+                // テスト用の無音再生
+                clockSound.play().then(() => {
+                    clockSound.pause();
+                    clockSound.currentTime = 0;
+                }).catch(error => {
+                    console.log('音声初期化エラー:', error);
+                });
+            }
+        }
+
+        // 効果音を鳴らす関数
+        function playClockSound() {
+            console.log("playClockSound")
+            if (!isSoundInitialized) {
+                return;
+            }
+
+            const currentTime = Date.now();
+            // 前回の再生から1秒以上経過していない場合は再生しない
+            if (currentTime - lastPlayTime < 1000) {
+                return;
+            }
+
+            clockSound.currentTime = 0;
+            clockSound.play().catch(error => {
+                console.log('音声再生エラー:', error);
+            });
+            lastPlayTime = currentTime; // 最後に音を鳴らした時刻を更新
+        }
 
         function startDrag(e) {
+            console.log("startDrag")
             if (isClockLocked || rotations >= MAX_ROTATIONS) return;
             isDragging = true;
             e.preventDefault();
+
             const {clientX, clientY} = (e.touches ? e.touches[0] : e);
             startAngle = getAngle(clientX, clientY);
             lastAngle = startAngle;
@@ -114,10 +180,21 @@
             console.log("Value:"+totalRotation)
             console.log("isClockLocked:"+isClockLocked)
 
+            // 30度ごとに効果音を鳴らす
+            const currentStep = Math.floor(totalRotation / 30);
+            const lastStep = Math.floor(lastPlayedAngle / 30);
+            console.log("currentStep:"+currentStep)
+            console.log("lastStep:"+lastStep)
+            if (currentStep > lastStep) {
+                playClockSound();
+                lastPlayedAngle = totalRotation;
+            }
+
             if (rotations >= MAX_ROTATIONS) {
                 totalRotation = MAX_ROTATIONS * 360;
                 rotations = MAX_ROTATIONS;
                 lockClock();
+                bellSound.play();
             } else if (totalRotation >= MAX_ROTATIONS * 360 / 2 && !isClockLocked && !isHalfClockLocked) {
                 isHalfClockLocked = true;
                 lockClockTemporarily();
@@ -126,7 +203,6 @@
             const hand = document.getElementById('hand');
             hand.style.transform = `rotate(${totalRotation}deg)`;
 
-            updateRotationCount(rotations);
             sendData(Math.round(totalRotation));
 
             lastAngle = currentAngle;
@@ -138,10 +214,6 @@
                 .then(response => response.text())
                 .then(data => console.log(data))
                 .catch(error => console.error('エラー:', error));
-        }
-
-        function updateRotationCount(count) {
-            document.getElementById('rotationCount').textContent = count;
         }
 
         function lockClock() {
@@ -161,6 +233,8 @@
         }
 
         window.onload = function() {
+            initSound();
+            isSoundInitialized = true;
             const clock = document.getElementById('clock-container');
             clock.addEventListener('mousedown', startDrag);
             document.addEventListener('mousemove', rotateHand);
@@ -169,6 +243,8 @@
             document.addEventListener('touchmove', rotateHand);
             document.addEventListener('touchend', stopDrag);
             document.addEventListener('touchcancel', stopDrag);
+
+            document.getElementById('soundButton').addEventListener('click', initAndEnableSound);
 
             fetch('/config')
                 .then(response => response.json())
@@ -182,13 +258,11 @@
     </script>
 </head>
 <body>
+    <button id="soundButton">音声を有効にする</button>
     <div>
         <div id="clock-container">
             <img id="clock-image" src="image/clock.png" alt="Clock face">
             <div id="hand"></div>
-        </div>
-        <div id="rotationInfo">
-            <p>回転数: <span id="rotationCount">0</span></p>
         </div>
         <div id="message">時計を回してください</div>
     </div>

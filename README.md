@@ -8,7 +8,7 @@
 
 ## 必要要件
 
-- [Node.js](https://nodejs.org/)
+- [Node.js](https://nodejs.org/en)
 - TouchDesigner
 - npm（Node.jsに付属しています）
 
